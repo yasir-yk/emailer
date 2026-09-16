@@ -144,10 +144,11 @@ export function compileToHTML(template: EmailTemplate): string {
     .map((block) => {
       const s = block.styles;
       const p = block.properties;
-      const pt = s.paddingTop ?? 10;
-      const pb = s.paddingBottom ?? 10;
-      const pl = s.paddingLeft ?? 25;
-      const pr = s.paddingRight ?? 25;
+      const isImg = block.type === 'image';
+      const pt = s.paddingTop ?? (isImg ? 0 : 10);
+      const pb = s.paddingBottom ?? (isImg ? 0 : 10);
+      const pl = s.paddingLeft ?? (isImg ? 0 : 25);
+      const pr = s.paddingRight ?? (isImg ? 0 : 25);
       const align = s.textAlign || 'left';
       const color = s.color || '#1e293b';
       const fontSize = s.fontSize || '16px';

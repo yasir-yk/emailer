@@ -243,10 +243,74 @@ export function PropertyPanel({
   if (!selectedBlock) {
     return (
       <div className="w-80 bg-slate-900/90 border-l border-slate-800 p-5 flex flex-col shrink-0 space-y-6 overflow-y-auto">
-        <div className="text-center py-4">
-          <Sliders className="w-8 h-8 text-slate-700 mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-slate-400">No Block Selected</h3>
-          <p className="text-xs text-slate-500 mt-1">Select any block on the canvas to inspect and edit its properties.</p>
+        <div className="text-center py-2">
+          <Sliders className="w-6 h-6 text-sky-400 mx-auto mb-1" />
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider">Global Template Settings</h3>
+          <p className="text-xs text-slate-500 mt-0.5">Configure sender details, template frame, and merge tags.</p>
+        </div>
+
+        {/* Sender Identity Card */}
+        <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+          <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5 text-sky-400" /> Sender Identity (From Header)
+          </span>
+
+          <div>
+            <label className="block text-[10px] font-semibold uppercase text-slate-400 mb-1">
+              Sender Name (From Name)
+            </label>
+            <input
+              type="text"
+              value={template.senderName || 'Emailer SaaS'}
+              onChange={(e) => onUpdateTemplate({ ...template, senderName: e.target.value })}
+              placeholder="e.g. ChatRadix Team"
+              className="glass-input w-full text-xs py-1.5 font-medium text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold uppercase text-slate-400 mb-1">
+              Sender Email (From Address)
+            </label>
+            <input
+              type="text"
+              value={template.senderEmail || 'info@mailtrap.co'}
+              onChange={(e) => onUpdateTemplate({ ...template, senderEmail: e.target.value })}
+              placeholder="e.g. support@chatradix.com"
+              className="glass-input w-full text-xs py-1.5 font-mono text-slate-300"
+            />
+          </div>
+        </div>
+
+        {/* Template Outer Frame Padding Card */}
+        <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+          <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+            <Building className="w-3.5 h-3.5 text-sky-400" /> Template Outer Frame Padding
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => onUpdateTemplate({ ...template, contentPadding: 0 })}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
+                (template.contentPadding ?? 0) === 0
+                  ? 'bg-sky-500/20 border-sky-500 text-sky-400'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              ⚡ Zero Frame (0px)
+            </button>
+            <button
+              type="button"
+              onClick={() => onUpdateTemplate({ ...template, contentPadding: 20 })}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
+                (template.contentPadding ?? 0) > 0
+                  ? 'bg-sky-500/20 border-sky-500 text-sky-400'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              🖼️ Card Frame (20px)
+            </button>
+          </div>
         </div>
 
         {/* Sidebar Merge Tags Card */}
@@ -389,6 +453,45 @@ export function PropertyPanel({
               placeholder="https://userdomain.com"
               className="glass-input w-full text-xs"
             />
+          </div>
+
+          {/* Image Padding & Frame Presets */}
+          <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+            <span className="text-[11px] font-bold text-slate-300 uppercase">Image Frame / Outer Padding</span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  updateStyle('paddingTop', 0);
+                  updateStyle('paddingBottom', 0);
+                  updateStyle('paddingLeft', 0);
+                  updateStyle('paddingRight', 0);
+                }}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
+                  (s.paddingTop ?? 0) === 0 && (s.paddingLeft ?? 0) === 0
+                    ? 'bg-sky-500/20 border-sky-500 text-sky-400'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                ⚡ Full Width (0 Padding)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  updateStyle('paddingTop', 15);
+                  updateStyle('paddingBottom', 15);
+                  updateStyle('paddingLeft', 20);
+                  updateStyle('paddingRight', 20);
+                }}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
+                  (s.paddingTop ?? 0) > 0 || (s.paddingLeft ?? 0) > 0
+                    ? 'bg-sky-500/20 border-sky-500 text-sky-400'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                🖼️ Padded Frame
+              </button>
+            </div>
           </div>
         </div>
       )}

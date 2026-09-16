@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Send,
   Plus,
@@ -64,7 +65,8 @@ interface Campaign {
   };
 }
 
-export default function CampaignsPage() {
+function CampaignsContent() {
+  const searchParams = useSearchParams();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -112,6 +114,7 @@ export default function CampaignsPage() {
   }, []);
 
   const extractMergeVariables = (html: string): string[] => {
+    if (!html) return [];
     const matches = html.match(/\{\{[a-zA-Z0-9_]+\}\}/g);
     return Array.from(new Set(matches || []));
   };
@@ -133,6 +136,14 @@ export default function CampaignsPage() {
       }
     }
   };
+
+  useEffect(() => {
+    const tplParam = searchParams.get('templateId');
+    if (tplParam && campaigns.length > 0) {
+      handleSelectTemplate(tplParam);
+      setShowCreateModal(true);
+    }
+  }, [searchParams, campaigns]);
 
   const handleOpenLogs = async (campaign: Campaign) => {
     setLoadingLogs(true);
@@ -821,5 +832,13 @@ export default function CampaignsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CampaignsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-slate-400">Loading campaign queue...</div>}>
+      <CampaignsContent />
+    </Suspense>
   );
 }

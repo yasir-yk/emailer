@@ -27,6 +27,8 @@ const INITIAL_TEMPLATE: EmailTemplate = {
   name: 'Weekly Digest Newsletter',
   subject: '🚀 Exclusive Weekly Insights & Product Updates',
   preheader: 'Check out our latest news and upcoming releases...',
+  senderName: 'Emailer SaaS',
+  senderEmail: 'yasir.r.kazmi@gmail.com',
   bodyBgColor: '#f8fafc',
   contentBgColor: '#ffffff',
   updatedAt: new Date().toISOString(),
@@ -140,18 +142,42 @@ function EditorContent() {
             if (cmp.templateJson) {
               try {
                 const parsed = JSON.parse(cmp.templateJson);
-                setTemplate(parsed);
+                setTemplate({ ...parsed, id: cmp.id });
                 setSaveName(parsed.name || cmp.name);
                 setSaveSubject(parsed.subject || cmp.subject);
                 if (parsed.blocks?.[0]) setSelectedBlockId(parsed.blocks[0].id);
                 return;
-              } catch {}
+              } catch (err) {
+                console.error('Failed to parse templateJson:', err);
+              }
             }
             setTemplate({
-              ...INITIAL_TEMPLATE,
               id: cmp.id,
               name: cmp.name,
               subject: cmp.subject,
+              preheader: cmp.previewText || '',
+              senderName: cmp.senderName || 'Emailer SaaS',
+              senderEmail: cmp.senderEmail || 'info@mailtrap.co',
+              bodyBgColor: '#f8fafc',
+              contentBgColor: '#ffffff',
+              updatedAt: cmp.updatedAt || new Date().toISOString(),
+              blocks: [
+                {
+                  id: `blk-${Date.now()}`,
+                  type: 'text',
+                  content: cmp.templateHtml || 'Edit your newsletter content...',
+                  styles: {
+                    fontSize: '15px',
+                    color: '#1e293b',
+                    textAlign: 'left',
+                    paddingTop: 15,
+                    paddingBottom: 15,
+                    paddingLeft: 25,
+                    paddingRight: 25,
+                  },
+                  properties: {},
+                },
+              ],
             });
             setSaveName(cmp.name);
             setSaveSubject(cmp.subject);
@@ -179,10 +205,10 @@ function EditorContent() {
         fontSize: type === 'header' ? '24px' : '15px',
         color: '#1e293b',
         textAlign: 'left',
-        paddingTop: 15,
-        paddingBottom: 15,
-        paddingLeft: 25,
-        paddingRight: 25,
+        paddingTop: type === 'image' ? 0 : 15,
+        paddingBottom: type === 'image' ? 0 : 15,
+        paddingLeft: type === 'image' ? 0 : 25,
+        paddingRight: type === 'image' ? 0 : 25,
         backgroundColor: 'transparent',
       },
       properties: {
@@ -250,28 +276,37 @@ function EditorContent() {
     setIsSaving(true);
 
     try {
-      const updatedTemplate = { ...template, name: saveName, subject: saveSubject };
+      const targetId = templateId || (template.id && !template.id.startsWith('tpl-') ? template.id : null);
+      const updatedTemplate = { ...template, id: targetId || template.id, name: saveName, subject: saveSubject };
       setTemplate(updatedTemplate);
 
       const htmlContent = compileToHTML(updatedTemplate);
       const jsonContent = JSON.stringify(updatedTemplate);
 
-      const targetId = templateId || (template.id && !template.id.startsWith('tpl-') ? template.id : null);
       const url = targetId ? `/api/campaigns/${targetId}` : '/api/campaigns';
       const method = targetId ? 'PUT' : 'POST';
 
-      await fetch(url, {
+      const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: saveName || 'Saved Newsletter Template',
           subject: saveSubject || 'Newsletter Update',
-          senderName: 'Marketing Team',
-          senderEmail: 'info@mailtrap.co',
+          senderName: template.senderName || 'Emailer SaaS',
+          senderEmail: template.senderEmail || 'info@mailtrap.co',
           templateHtml: htmlContent,
           templateJson: jsonContent,
         }),
       });
+
+      const data = await res.json();
+      if (res.ok && data.campaign) {
+        const savedId = data.campaign.id;
+        setTemplate((prev) => ({ ...prev, id: savedId }));
+        if (!templateId) {
+          window.history.replaceState(null, '', `/dashboard/editor?templateId=${savedId}`);
+        }
+      }
 
       setShowSaveModal(false);
       setSavedStatus(true);
@@ -304,17 +339,30 @@ function EditorContent() {
               }}
               className="bg-transparent font-bold text-white text-base focus:outline-none focus:ring-1 focus:ring-sky-500 rounded px-1"
             />
-            <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
-              <span>Subject:</span>
-              <input
-                type="text"
-                value={template.subject}
-                onChange={(e) => {
-                  setTemplate({ ...template, subject: e.target.value });
-                  setSaveSubject(e.target.value);
-                }}
-                className="bg-transparent text-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 rounded px-1 w-64 truncate"
-              />
+            <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-400">
+              <div className="flex items-center gap-1">
+                <span className="font-semibold text-slate-400">From Name:</span>
+                <input
+                  type="text"
+                  value={template.senderName || 'Emailer SaaS'}
+                  onChange={(e) => setTemplate({ ...template, senderName: e.target.value })}
+                  placeholder="e.g. ChatRadix Team"
+                  className="bg-transparent text-sky-400 font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500 rounded px-1 w-32 truncate"
+                />
+              </div>
+              <span className="text-slate-600">|</span>
+              <div className="flex items-center gap-1">
+                <span>Subject:</span>
+                <input
+                  type="text"
+                  value={template.subject}
+                  onChange={(e) => {
+                    setTemplate({ ...template, subject: e.target.value });
+                    setSaveSubject(e.target.value);
+                  }}
+                  className="bg-transparent text-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 rounded px-1 w-52 truncate"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -369,6 +417,7 @@ function EditorContent() {
           onDuplicateBlock={handleDuplicateBlock}
           onDeleteBlock={handleDeleteBlock}
           onAddBlock={handleAddBlock}
+          onUpdateZoom={(zoom) => setTemplate({ ...template, canvasZoom: zoom })}
         />
 
         {/* Right: Property Inspector */}

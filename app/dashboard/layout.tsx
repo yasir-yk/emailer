@@ -44,7 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setActiveOrg(data.organizations[0]);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const navItems = [
@@ -117,11 +117,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    isActive
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive
                       ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20 shadow-sm'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                   {item.name}
@@ -150,7 +149,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
+      <main className="flex-1 p-6 md:p-8 max-w-full mx-auto w-full overflow-y-auto">
         {children}
       </main>
     </div>

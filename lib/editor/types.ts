@@ -55,11 +55,15 @@ export interface EmailTemplate {
   name: string;
   subject: string;
   preheader: string;
+  senderName?: string;
+  senderEmail?: string;
   bodyBgColor: string;
   contentBgColor: string;
   blocks: EmailBlock[];
   sampleValues?: Record<string, string>;
   updatedAt: string;
+  contentPadding?: number;
+  canvasZoom?: number;
 }
 
 export interface MergeTag {

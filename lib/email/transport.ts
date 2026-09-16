@@ -25,6 +25,40 @@ async function getEtherealAccount() {
 }
 
 /**
+ * Extracts base64 image data URIs (e.g. data:image/png;base64,...) from HTML
+ * and converts them into Nodemailer CID (Content-ID) inline attachments.
+ * Gmail and Outlook block raw base64 data URIs, but render CID inline attachments seamlessly!
+ */
+export function extractCidAttachments(html: string): {
+  processedHtml: string;
+  attachments: Array<{ filename: string; content: Buffer; cid: string }>;
+} {
+  const attachments: Array<{ filename: string; content: Buffer; cid: string }> = [];
+  let index = 0;
+
+  const processedHtml = html.replace(
+    /src=["'](data:image\/([a-zA-Z0-9]+);base64,([^"']+))["']/g,
+    (_, fullDataUri, imageType, base64Data) => {
+      index++;
+      const ext = imageType === 'jpeg' ? 'jpg' : imageType;
+      const cid = `inline_img_${Date.now()}_${index}`;
+      const filename = `image_${index}.${ext}`;
+      const buffer = Buffer.from(base64Data, 'base64');
+
+      attachments.push({
+        filename,
+        content: buffer,
+        cid,
+      });
+
+      return `src="cid:${cid}"`;
+    }
+  );
+
+  return { processedHtml, attachments };
+}
+
+/**
  * Dispatches email using real SMTP if configured in .env,
  * otherwise creates an Ethereal test inbox message or logs to Dev Mailbox.
  */
@@ -45,8 +79,13 @@ export async function sendEmail(options: EmailOptions): Promise<SendEmailResult>
     senderAddress = senderAddress.replace(/"/g, '');
   }
 
+  // Automatically convert base64 image data URIs into CID inline attachments for full Gmail / Client compatibility
+  const { processedHtml, attachments } = extractCidAttachments(options.html);
+
+  const isPlaceholderPass = !SMTP_PASS || SMTP_PASS === 'abcdefghijklmnop' || SMTP_PASS === 'your-smtp-pass';
+
   // 1. REAL SMTP DISPATCH (Mailtrap, Gmail, Resend, SendGrid, AWS SES)
-  if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
+  if (SMTP_HOST && SMTP_USER && SMTP_PASS && !isPlaceholderPass) {
     try {
       const cleanPass = SMTP_PASS.replace(/\s+/g, '');
       const transporter = nodemailer.createTransport({
@@ -63,8 +102,9 @@ export async function sendEmail(options: EmailOptions): Promise<SendEmailResult>
         from: senderAddress,
         to: options.to,
         subject: options.subject,
-        html: options.html,
+        html: processedHtml,
         headers: options.headers,
+        attachments: attachments.length > 0 ? attachments : undefined,
       });
 
       return {
@@ -73,17 +113,21 @@ export async function sendEmail(options: EmailOptions): Promise<SendEmailResult>
         mode: 'smtp',
       };
     } catch (err: any) {
-      if (err.code === 'EAUTH' || err.responseCode === 535) {
-        throw new Error(
-          'Gmail/SMTP Auth Failed (535): Credentials invalid. Make sure you are using your App Password or SMTP key.'
-        );
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[Local Dev SMTP Fallback] Real SMTP auth failed (${err.message}). Falling back to local Dev Test Inbox.`);
+      } else {
+        if (err.code === 'EAUTH' || err.responseCode === 535) {
+          throw new Error(
+            'Gmail/SMTP Auth Failed (535): Credentials invalid. Make sure you are using your App Password or SMTP key.'
+          );
+        }
+        if (err.responseCode === 550 || err.message?.includes('550 5.7.1')) {
+          throw new Error(
+            `SMTP Domain Error (550): Provider rejected "${senderAddress}". Check your verified sender address in .env (DEFAULT_FROM_EMAIL).`
+          );
+        }
+        throw err;
       }
-      if (err.responseCode === 550 || err.message?.includes('550 5.7.1')) {
-        throw new Error(
-          `SMTP Domain Error (550): Provider rejected "${senderAddress}". Check your verified sender address in .env (DEFAULT_FROM_EMAIL).`
-        );
-      }
-      throw err;
     }
   }
 
@@ -104,8 +148,9 @@ export async function sendEmail(options: EmailOptions): Promise<SendEmailResult>
       from: senderAddress,
       to: options.to,
       subject: options.subject,
-      html: options.html,
+      html: processedHtml,
       headers: options.headers,
+      attachments: attachments.length > 0 ? attachments : undefined,
     });
 
     const etherealUrl = nodemailer.getTestMessageUrl(info);

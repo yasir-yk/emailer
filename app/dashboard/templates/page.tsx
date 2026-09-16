@@ -182,23 +182,23 @@ export default function SavedTemplatesPage() {
                       <Edit className="w-3.5 h-3.5 text-sky-400" /> Edit
                     </Link>
 
-                    {/* USE IN CAMPAIGN BUTTON */}
+                    {/* USE IN CAMPAIGN BUTTON (CLONES TEMPLATE FOR CAMPAIGN) */}
                     <Link
-                      href="/dashboard/campaigns"
+                      href={`/dashboard/campaigns?templateId=${tpl.id}`}
                       className="btn-primary py-1.5 px-2.5 text-xs flex items-center gap-1"
-                      title="Use in Campaign"
+                      title="Launch Campaign from this Template"
                     >
-                      <Send className="w-3.5 h-3.5" /> Campaign
+                      <Send className="w-3.5 h-3.5" /> Launch Campaign
                     </Link>
 
-                    {/* DELETE BUTTON */}
+                    {/* DELETE TEMPLATE BUTTON */}
                     <button
                       onClick={() => handleDeleteTemplate(tpl.id)}
                       disabled={deletingId === tpl.id}
-                      className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded transition-colors"
-                      title="Delete Template"
+                      className="btn-secondary text-red-400 hover:text-red-300 hover:bg-red-500/10 border-red-500/30 py-1.5 px-2.5 text-xs flex items-center gap-1"
+                      title="Delete Template from Library"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5 text-red-400" /> Delete
                     </button>
                   </div>
                 </div>

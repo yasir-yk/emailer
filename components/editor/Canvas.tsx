@@ -3,7 +3,7 @@
 import React from 'react';
 import { EmailBlock, BlockType, EmailTemplate } from '@/lib/editor/types';
 import { substituteMergeTags, getSocialDefaultIcon } from '@/lib/editor/compiler';
-import { ArrowUp, ArrowDown, Copy, Trash2, Plus } from 'lucide-react';
+import { ArrowUp, ArrowDown, Copy, Trash2, Plus, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 
 interface Props {
   template: EmailTemplate;
@@ -14,6 +14,7 @@ interface Props {
   onDuplicateBlock: (id: string) => void;
   onDeleteBlock: (id: string) => void;
   onAddBlock: (type: BlockType, index?: number) => void;
+  onUpdateZoom?: (zoom: number) => void;
 }
 
 export function Canvas({
@@ -25,6 +26,7 @@ export function Canvas({
   onDuplicateBlock,
   onDeleteBlock,
   onAddBlock,
+  onUpdateZoom,
 }: Props) {
   const containerWidth = viewMode === 'mobile' ? 'w-[375px]' : 'w-[600px]';
 
@@ -39,10 +41,11 @@ export function Canvas({
   const renderBlockContent = (block: EmailBlock) => {
     const s = block.styles;
     const p = block.properties;
-    const pt = s.paddingTop ?? 10;
-    const pb = s.paddingBottom ?? 10;
-    const pl = s.paddingLeft ?? 25;
-    const pr = s.paddingRight ?? 25;
+    const isImg = block.type === 'image';
+    const pt = s.paddingTop ?? (isImg ? 0 : 10);
+    const pb = s.paddingBottom ?? (isImg ? 0 : 10);
+    const pl = s.paddingLeft ?? (isImg ? 0 : 25);
+    const pr = s.paddingRight ?? (isImg ? 0 : 25);
     const align = s.textAlign || 'left';
     const color = s.color || '#1e293b';
     const fontSize = s.fontSize || '16px';
@@ -75,8 +78,10 @@ export function Canvas({
               src={p.imageUrl || 'https://via.placeholder.com/600x200'}
               alt={p.altText || ''}
               style={{
-                display: 'inline-block',
+                display: 'block',
+                width: '100%',
                 maxWidth: '100%',
+                height: 'auto',
                 borderRadius: `${s.borderRadius || 0}px`,
               }}
             />
@@ -149,12 +154,19 @@ export function Canvas({
     }
   };
 
+  const zoomScale = (template.canvasZoom || 100) / 100;
+
   return (
-    <div className="flex-1 bg-slate-950 p-6 md:p-10 flex flex-col items-center overflow-y-auto relative">
+    <div className="flex-1 bg-slate-950 p-6 md:p-10 flex flex-col items-center overflow-y-auto relative pb-48">
       {/* Container Frame */}
       <div
-        className={`${containerWidth} transition-all duration-300 shadow-2xl rounded-xl overflow-hidden border border-slate-800 bg-white`}
-        style={{ backgroundColor: template.contentBgColor || '#ffffff' }}
+        className={`${containerWidth} transition-all duration-300 shadow-2xl rounded-xl border border-slate-800 bg-white`}
+        style={{
+          backgroundColor: template.contentBgColor || '#ffffff',
+          padding: `${template.contentPadding ?? 0}px`,
+          transform: zoomScale !== 1 ? `scale(${zoomScale})` : undefined,
+          transformOrigin: 'top center',
+        }}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => handleDrop(e)}
       >
@@ -244,6 +256,51 @@ export function Canvas({
       >
         <Plus className="w-4 h-4 text-sky-400" /> Add Text Block
       </button>
+
+      {/* Floating Canvas Zoom Controls (Moved from header) */}
+      <div className="fixed bottom-6 right-8 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-2xl shadow-2xl p-1.5 flex items-center gap-1.5 z-30">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Canvas Zoom</span>
+        <button
+          onClick={() => onUpdateZoom?.(Math.max(50, (template.canvasZoom || 100) - 10))}
+          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+          title="Zoom Out (-10%)"
+        >
+          <ZoomOut className="w-4 h-4" />
+        </button>
+        <span className="text-xs font-bold text-white font-mono min-w-[36px] text-center">
+          {template.canvasZoom || 100}%
+        </span>
+        <button
+          onClick={() => onUpdateZoom?.(Math.min(150, (template.canvasZoom || 100) + 10))}
+          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+          title="Zoom In (+10%)"
+        >
+          <ZoomIn className="w-4 h-4" />
+        </button>
+        <div className="w-px h-4 bg-slate-800 mx-1" />
+        {[100, 85, 75].map((z) => (
+          <button
+            key={z}
+            onClick={() => onUpdateZoom?.(z)}
+            className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all ${
+              (template.canvasZoom || 100) === z
+                ? 'bg-sky-500 text-white shadow-sm font-bold'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            {z}%
+          </button>
+        ))}
+        {(template.canvasZoom || 100) !== 100 && (
+          <button
+            onClick={() => onUpdateZoom?.(100)}
+            className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-slate-800 transition-colors"
+            title="Reset Zoom to 100%"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

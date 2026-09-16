@@ -12,6 +12,8 @@ interface Props {
 
 export function TestEmailModal({ template, onClose }: Props) {
   const [recipient, setRecipient] = useState('');
+  const [senderName, setSenderName] = useState(template?.senderName || 'Emailer SaaS');
+  const [senderEmail, setSenderEmail] = useState(template?.senderEmail || 'yasir.r.kazmi@gmail.com');
   const [sampleFirstName, setSampleFirstName] = useState('Alex');
   const [sampleLastName, setSampleLastName] = useState('Smith');
   const [sampleOrgName, setSampleOrgName] = useState('Acme Marketing Inc');
@@ -41,6 +43,8 @@ export function TestEmailModal({ template, onClose }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: recipient,
+          senderName,
+          senderEmail,
           subject: template?.subject || 'Test Email Preview',
           html: htmlContent,
           sampleFirstName,
@@ -147,8 +151,35 @@ export function TestEmailModal({ template, onClose }: Props) {
                 value={recipient}
                 onChange={(e) => setRecipient(e.target.value)}
                 placeholder="you@gmail.com"
-                className="glass-input w-full"
+                className="glass-input w-full text-xs"
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                  From Name (Sender)
+                </label>
+                <input
+                  type="text"
+                  value={senderName}
+                  onChange={(e) => setSenderName(e.target.value)}
+                  placeholder="e.g. ChatRadix Team"
+                  className="glass-input w-full text-xs font-medium text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                  From Address (Email)
+                </label>
+                <input
+                  type="text"
+                  value={senderEmail}
+                  onChange={(e) => setSenderEmail(e.target.value)}
+                  placeholder="e.g. support@chatradix.com"
+                  className="glass-input w-full text-xs font-mono text-slate-300"
+                />
+              </div>
             </div>
 
             {/* Editable Merge Tag Inputs */}
